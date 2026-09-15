@@ -1,0 +1,763 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta http-equiv="Content-Security-Policy" content="
+  default-src 'none';
+  script-src 'self' 'unsafe-inline';
+  style-src 'self' 'unsafe-inline' https://fonts.googleapis.com;
+  font-src https://fonts.gstatic.com;
+  img-src 'self' data:;
+  connect-src 'none';
+  base-uri 'none';
+  form-action 'none';
+  object-src 'none';
+">
+<meta name="referrer" content="strict-origin-when-cross-origin">
+<title>The Ledger — Introduction Study Companon</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,600;9..144,700&family=Lora:ital,wght@0,400;0,500;0,600;1,400&family=Special+Elite&display=swap');
+
+  :root{
+    --bg:#12160f;
+    --bg-panel:#191e14;
+    --bg-card:#1e2418;
+    --bg-card-open:#232b1c;
+    --ledger-line: rgba(201,178,120,0.14);
+    --ink:#e8e2ce;
+    --ink-dim:#9a9480;
+    --ink-faint:#6b6858;
+    --gold:#c9a227;
+    --gold-bright:#e2c04f;
+    --green:#7fae6a;
+    --green-bright:#9ecb85;
+    --red:#9a4a3c;
+    --border:#343a29;
+    --border-soft:#262c1d;
+  }
+
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    background:
+      repeating-linear-gradient(180deg, transparent 0 31px, var(--ledger-line) 31px 32px),
+      radial-gradient(ellipse at top left, #171c11 0%, var(--bg) 55%);
+    color:var(--ink);
+    font-family:'Lora', serif;
+    min-height:100vh;
+    padding:0;
+  }
+
+  .margin-rule{
+    position:fixed;
+    top:0; bottom:0; left:64px;
+    width:1px;
+    background:var(--red);
+    opacity:0.35;
+    z-index:0;
+  }
+
+  .wrap{
+    position:relative;
+    z-index:1;
+    max-width:1180px;
+    margin:0 auto;
+    padding:36px 28px 90px 84px;
+  }
+
+  header.title-block{
+    margin-bottom:28px;
+    border-bottom:1px solid var(--border);
+    padding-bottom:20px;
+  }
+  .eyebrow{
+    font-family:'Special Elite', monospace;
+    font-size:11px;
+    letter-spacing:3px;
+    color:var(--gold);
+    text-transform:uppercase;
+  }
+  h1.book-title{
+    font-family:'Fraunces', serif;
+    font-optical-sizing:auto;
+    font-weight:700;
+    font-size:clamp(34px, 5vw, 54px);
+    margin:6px 0 4px 0;
+    letter-spacing:0.5px;
+  }
+  .book-subtitle{
+    color:var(--ink-dim);
+    font-size:15px;
+    font-style:italic;
+  }
+
+  .chapter-tabs{
+    display:flex;
+    gap:8px;
+    flex-wrap:wrap;
+    margin-top:18px;
+  }
+  .chapter-tab{
+    font-family:'Special Elite', monospace;
+    font-size:11.5px;
+    letter-spacing:1px;
+    padding:7px 14px;
+    border:1px solid var(--border);
+    border-radius:2px;
+    color:var(--ink-dim);
+    background:var(--bg-panel);
+  }
+  .chapter-tab.active{
+    color:var(--bg);
+    background:var(--gold);
+    border-color:var(--gold);
+  }
+
+  .layout{
+    display:grid;
+    grid-template-columns:290px 1fr;
+    gap:30px;
+    align-items:start;
+  }
+  @media (max-width:860px){
+    .layout{grid-template-columns:1fr;}
+    .wrap{padding:28px 16px 90px 32px;}
+    .margin-rule{left:24px;}
+  }
+
+  /* ===== Knowledge Balance Ledger ===== */
+  .ledger-panel{
+    position:sticky;
+    top:20px;
+    background:var(--bg-panel);
+    border:1px solid var(--border);
+    border-radius:3px;
+    overflow:hidden;
+  }
+  .ledger-head{
+    padding:16px 16px 12px 16px;
+    border-bottom:1px solid var(--border);
+  }
+  .ledger-head .eyebrow{display:block;margin-bottom:2px;}
+  .ledger-head h2{
+    font-family:'Fraunces', serif;
+    font-size:20px;
+    margin:0;
+    font-weight:600;
+  }
+  .balance-figure{
+    font-family:'Special Elite', monospace;
+    font-size:34px;
+    color:var(--gold-bright);
+    margin-top:8px;
+    letter-spacing:1px;
+  }
+  .balance-label{
+    font-size:11px;
+    color:var(--ink-faint);
+    text-transform:uppercase;
+    letter-spacing:1.5px;
+  }
+  .ledger-progress{
+    padding:12px 16px;
+    border-bottom:1px solid var(--border);
+    font-size:12.5px;
+    color:var(--ink-dim);
+  }
+  .progress-row{display:flex; justify-content:space-between; margin-bottom:6px;}
+  .progress-bar-track{
+    height:5px;
+    background:var(--border-soft);
+    border-radius:3px;
+    overflow:hidden;
+  }
+  .progress-bar-fill{
+    height:100%;
+    background:var(--green);
+  }
+  .ledger-entries{
+    max-height:340px;
+    overflow-y:auto;
+    padding:8px 0;
+  }
+  .ledger-entries::-webkit-scrollbar{width:6px;}
+  .ledger-entries::-webkit-scrollbar-thumb{background:var(--border); border-radius:4px;}
+  .ledger-row{
+    display:grid;
+    grid-template-columns:1fr auto;
+    gap:6px;
+    padding:7px 16px;
+    font-size:12px;
+    border-bottom:1px dashed var(--border-soft);
+    color:var(--ink-dim);
+  }
+  .ledger-row .desc{color:var(--ink);}
+  .ledger-row .amt{
+    font-family:'Special Elite', monospace;
+    color:var(--green-bright);
+    white-space:nowrap;
+  }
+  .ledger-empty{
+    padding:16px;
+    font-size:12.5px;
+    color:var(--ink-faint);
+    font-style:italic;
+  }
+
+  /* ===== Main content ===== */
+  main{min-width:0;}
+
+  .group{
+    margin-bottom:16px;
+    border:1px solid var(--border);
+    border-radius:3px;
+    background:var(--bg-panel);
+    overflow:hidden;
+  }
+  .group-head{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap:12px;
+    padding:16px 18px;
+    cursor:pointer;
+    user-select:none;
+  }
+  .group-head:hover{background:var(--bg-card);}
+  .group-title-wrap{display:flex; align-items:baseline; gap:10px; flex-wrap:wrap;}
+  .group-num{
+    font-family:'Special Elite', monospace;
+    color:var(--gold);
+    font-size:13px;
+  }
+  .group-title{
+    font-family:'Fraunces', serif;
+    font-weight:600;
+    font-size:19px;
+  }
+  .group-badge{
+    font-family:'Special Elite', monospace;
+    font-size:11px;
+    color:var(--ink-faint);
+    white-space:nowrap;
+  }
+  .chevron{
+    color:var(--ink-dim);
+    transition:transform 0.2s ease;
+    font-size:13px;
+  }
+  .group.open .chevron{transform:rotate(90deg);}
+
+  .group-body{
+    display:none;
+    padding:4px 18px 18px 18px;
+    border-top:1px solid var(--border-soft);
+  }
+  .group.open .group-body{display:block;}
+
+  .bite{
+    padding:14px 0;
+    border-bottom:1px solid var(--border-soft);
+    display:flex;
+    gap:12px;
+    align-items:flex-start;
+  }
+  .bite:last-of-type{border-bottom:none;}
+  .bite-check{
+    flex:0 0 auto;
+    width:22px; height:22px;
+    border:1px solid var(--ink-faint);
+    border-radius:3px;
+    margin-top:2px;
+    cursor:pointer;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    font-size:13px;
+    color:transparent;
+    background:transparent;
+    transition:all 0.15s ease;
+  }
+  .bite-check:hover{border-color:var(--gold);}
+  .bite.read .bite-check{
+    background:var(--green);
+    border-color:var(--green);
+    color:var(--bg);
+  }
+  .bite-body{flex:1;}
+  .bite-idx{
+    font-family:'Special Elite', monospace;
+    font-size:10.5px;
+    color:var(--ink-faint);
+    margin-bottom:3px;
+    letter-spacing:1px;
+  }
+  .bite-text{
+    font-size:15px;
+    line-height:1.55;
+    color:var(--ink);
+  }
+  .bite.read .bite-text{color:var(--ink-dim);}
+  .bite-mark-btn{
+    font-family:'Special Elite', monospace;
+    font-size:10px;
+    color:var(--gold);
+    cursor:pointer;
+    margin-top:6px;
+    display:inline-block;
+    letter-spacing:0.5px;
+  }
+  .bite.read .bite-mark-btn{color:var(--green-bright);}
+
+  /* Quiz */
+  .quiz{
+    margin-top:14px;
+    background:var(--bg-card);
+    border:1px solid var(--border);
+    border-left:3px solid var(--gold);
+    border-radius:2px;
+    padding:16px;
+  }
+  .quiz-label{
+    font-family:'Special Elite', monospace;
+    font-size:11px;
+    color:var(--gold);
+    letter-spacing:1.5px;
+    text-transform:uppercase;
+    margin-bottom:8px;
+  }
+  .quiz-question{
+    font-family:'Fraunces', serif;
+    font-size:16.5px;
+    font-weight:600;
+    margin-bottom:12px;
+  }
+  .quiz-options{display:flex; flex-direction:column; gap:8px;}
+  .quiz-option{
+    text-align:left;
+    background:var(--bg-panel);
+    border:1px solid var(--border);
+    color:var(--ink);
+    padding:10px 12px;
+    border-radius:2px;
+    font-family:'Lora', serif;
+    font-size:14px;
+    cursor:pointer;
+  }
+  .quiz-option:hover{border-color:var(--gold);}
+  .quiz-option.correct{
+    background:rgba(127,174,106,0.18);
+    border-color:var(--green);
+    color:var(--green-bright);
+  }
+  .quiz-option.wrong{
+    background:rgba(154,74,60,0.18);
+    border-color:var(--red);
+    color:#d99184;
+  }
+  .quiz-option[disabled]{cursor:default;}
+  .quiz-feedback{
+    margin-top:10px;
+    font-size:13px;
+    color:var(--ink-dim);
+    font-style:italic;
+  }
+
+  footer.chapter-nav{
+    margin-top:24px;
+    padding-top:18px;
+    border-top:1px solid var(--border);
+    font-size:12.5px;
+    color:var(--ink-faint);
+    text-align:center;
+  }
+
+  @media (prefers-reduced-motion: reduce){
+    *{transition:none !important;}
+  }
+</style>
+</head>
+<body>
+<div class="margin-rule"></div>
+<div class="wrap">
+
+  <header class="title-block">
+    <span class="eyebrow">The Ledger — Study Companion</span>
+    <h1 class="book-title">Introduction</h1>
+    <div class="book-subtitle">Bite-sized. Own words. Nothing skipped.</div>
+    <div class="chapter-tabs">
+      <div class="chapter-tab active">Introduction — There Is a Need</div>
+    </div>
+  </header>
+
+  <div class="layout">
+    <!-- LEDGER PANEL -->
+    <aside class="ledger-panel">
+      <div class="ledger-head">
+        <span class="eyebrow">Account of</span>
+        <h2>Knowledge Balance</h2>
+        <div class="balance-figure" id="balanceFigure">0</div>
+        <div class="balance-label">financial IQ points earned</div>
+      </div>
+      <div class="ledger-progress">
+        <div class="progress-row"><span>Bites read</span><span id="bitesProgressText">0 / 0</span></div>
+        <div class="progress-bar-track"><div class="progress-bar-fill" id="bitesProgressBar" style="width:0%"></div></div>
+        <div class="progress-row" style="margin-top:10px;"><span>Quizzes passed</span><span id="quizProgressText">0 / 0</span></div>
+        <div class="progress-bar-track"><div class="progress-bar-fill" id="quizProgressBar" style="width:0%"></div></div>
+      </div>
+      <div class="ledger-entries" id="ledgerEntries">
+        <div class="ledger-empty">No entries yet. Mark a bite as read or pass a quiz to open the account.</div>
+      </div>
+    </aside>
+
+    <!-- MAIN CONTENT -->
+    <main id="mainContent"></main>
+  </div>
+
+  <footer class="chapter-nav">Introduction, complete. Send the next screenshot whenever you're ready — say "add this page to the ledger."</footer>
+</div>
+
+<script>
+/* ============ DATA ============ */
+const CHAPTER = {
+  id: 'intro',
+  groups: [
+    {
+      id: 'g1', number: 'I', title: "Sharon's Master Plan",
+      bites: [
+        { id:'b1', text:"Growing up, Sharon's parents pushed one formula: study hard, earn good grades, and land a well-paying job with solid benefits. She followed it exactly — graduating with honors in accounting in 1976 and landing a job at a top accounting firm right away." },
+        { id:'b2', text:"Sharon's husband Michael came from a similarly hardworking family and followed the same blueprint, graduating with honors twice — once in engineering, once in law. A prestigious Washington, D.C. law firm recruited him, and his career path looked locked in for success." },
+        { id:'b3', text:"Despite doing everything \"right,\" neither career unfolded as the plan promised. Both switched jobs multiple times, no employer pension ever vested for them, and their retirement savings grew only from what they personally contributed." },
+        { id:'b4', text:"Sharon and Michael built a strong family with three children and poured significant resources into giving them the best education money could buy — following the same playbook their own parents had used on them." }
+      ],
+      quiz: {
+        id:'q1',
+        question:"Despite following the traditional \"study hard, get a good job\" plan, what actually happened to Sharon and Michael's careers?",
+        options:[
+          "They reached financial independence quickly",
+          "They advanced, but with no vested pensions — retirement savings depended entirely on their own contributions",
+          "They both kept the same single job for their entire careers",
+          "They avoided paying taxes"
+        ],
+        correct:1,
+        feedbackCorrect:"Right — the plan delivered credentials and careers, but no real safety net.",
+        feedbackWrong:"Not quite. Look again at what happened to their pensions and retirement funds."
+      }
+    },
+    {
+      id:'g2', number:'II', title:"A Son's Wake-Up Call",
+      bites: [
+        { id:'b5', text:"In 1996, one of Sharon's children came home from school bored and frustrated, questioning why he should bother studying subjects he'd never actually use in real life." },
+        { id:'b6', text:"Sharon's instinct answer was the same one she'd grown up with: good grades lead to college, and college leads to a good job. Her son wasn't interested — he told her flatly he intended to be rich whether or not he went to college." },
+        { id:'b7', text:"The son pointed to examples all around him: athletes and entertainers who built massive wealth without leaning on formal credentials, a tech founder who dropped out of an elite university to build one of the biggest companies in the world, and a pro athlete earning millions a year despite being labeled a weak student. His point: today's richest people didn't get there simply by staying in school." },
+        { id:'b8', text:"Sharon realized mid-argument that she was handing her son the exact same advice her own parents had given her — except the world had changed dramatically while the advice stayed frozen in time." },
+        { id:'b9', text:"The son didn't want to work himself into exhaustion the way his parents had, only to face higher taxes, shakier job security, and shrinking pay for the same credentials that once guaranteed success — he even pointed out that doctors now earn comparatively less than they used to. He also doubted Social Security or a company pension would be there for him, and said plainly that he needed new answers, not old ones." },
+        { id:'b10', text:"Sharon conceded that the traditional path may have genuinely served people born before the mid-1940s well — but insisted it could actually backfire for her son's generation." }
+      ],
+      quiz:{
+        id:'q2',
+        question:"According to Sharon's son, why is the traditional \"study hard, get a job\" advice risky for his generation specifically?",
+        options:[
+          "Because college has become too hard to get into",
+          "Because he simply prefers sports to schoolwork",
+          "Because job security is gone, familiar credentials pay comparatively less, and safety nets like Social Security feel unreliable",
+          "Because his parents never went to college"
+        ],
+        correct:2,
+        feedbackCorrect:"Exactly — he's not rejecting effort, he's rejecting a plan built for a world that no longer exists.",
+        feedbackWrong:"Look again — his objection is about what the old plan actually delivers today, not about effort or ability."
+      }
+    },
+    {
+      id:'g3', number:'III', title:"A Daughter's Discovery & Meeting Robert",
+      bites: [
+        { id:'b11', text:"While her brother pushed back hard, Sharon's daughter came home from a money-focused board game lit up rather than deflated. She said she'd finally had fun learning, and had picked up a real understanding of how money and investing actually work." },
+        { id:'b12', text:"The daughter realized she could choose a career based on genuine interest instead of chasing job security or salary, because she was learning the skills businesses actually value — meaning she wouldn't have to worry about layoffs or lean on Social Security the way she assumed her classmates eventually would." },
+        { id:'b13', text:"The game that sparked this shift belonged to Robert Kiyosaki. Sharon couldn't talk with him right after that first encounter, but they later met up, hit it off immediately over a dinner with their spouses, and bonded over shared concerns about retirement, Social Security's shaky finances, and how much financial risk ordinary families were quietly carrying." },
+        { id:'b14', text:"Robert had already retired young — at 47 — as a self-made, self-taught entrepreneur and investor. What pulled him out of retirement was the same worry Sharon had: schools were preparing kids for a world that no longer existed, while the wealth gap between the rich and everyone else kept widening." },
+        { id:'b15', text:"Robert's blunt warning: telling a kid today to simply study hard, get good grades, and find a secure job is actually dangerous advice — a relic from a different economic era, made even riskier by shifts happening around the world." }
+      ],
+      quiz:{
+        id:'q3',
+        question:"What changed for Sharon's daughter after playing Robert's money game, compared to her brother's experience with school?",
+        options:[
+          "She became bored and disillusioned, just like her brother",
+          "She enjoyed learning and gained real understanding of money and investing, which let her think about career choice differently",
+          "She decided to skip college entirely",
+          "She refused to discuss money at all"
+        ],
+        correct:1,
+        feedbackCorrect:"Right — the format changed her relationship with the subject, not the subject itself.",
+        feedbackWrong:"Not quite — think about what she actually said she got out of the game."
+      }
+    },
+    {
+      id:'g4', number:'IV', title:"The Rules of Money",
+      bites: [
+        { id:'b16', text:"Robert argues that clinging to \"old rules\" won't secure a child's financial future — he considers it simply too risky in today's economy." },
+        { id:'b17', text:"His example: when a company announces layoffs, employees suffer immediately — jobs and income disappear. Yet the company's stock price often rises anyway, because the market tends to reward cost-cutting." },
+        { id:'b18', text:"That gap — job losses for workers, but stock gains for shareholders — is what Robert means by different rule sets. Owners and investors can profit from the very moves that hurt employees." },
+        { id:'b19', text:"For Robert, this isn't just an employer-versus-employee issue. It's really about who controls their own financial destiny — the owner or investor calling the shots, or the employee whose fate depends on someone else's decisions." },
+        { id:'b20', text:"Robert insists there are rules that wealthy people operate by, and a separate, more limited rule set that the other 95 percent of people are taught — mostly at home and in school. Simply telling a kid to study hard and get a job doesn't hand them the rules that actually build wealth." },
+        { id:'b21', text:"His pointed challenge: how can an education system teach financial rules it doesn't understand or apply itself? No amount of school funding closes that particular gap." }
+      ],
+      quiz:{
+        id:'q4',
+        question:"In Robert's downsizing example, what typically happens when a company announces layoffs?",
+        options:[
+          "Employees lose their jobs, and the stock price usually rises anyway",
+          "The stock price always falls right alongside employment",
+          "Nothing changes for shareholders either way",
+          "The company is forced to rehire everyone immediately"
+        ],
+        correct:0,
+        feedbackCorrect:"Right — that mismatch is exactly the \"different rules\" Robert is pointing to.",
+        feedbackWrong:"Re-read the example — the market's reaction and the workers' experience move in opposite directions."
+      }
+    },
+    {
+      id:'g5', number:'V', title:"Writing the Book",
+      bites: [
+        { id:'b22', text:"Sharon decided that rather than teaching her own kids to play it safe, she'd teach them to play it smart — but she needed a way to make that possible for parents who didn't understand the subject themselves." },
+        { id:'b23', text:"Robert admitted he'd already started writing a book on exactly this topic, but it existed only as scattered, unfinished sections on his computer — begun after his previous book became a bestseller, then set aside." },
+        { id:'b24', text:"After reading the scattered material, Sharon felt strongly it deserved to be organized and shared, especially given how much the world was changing. She agreed to help pull it together and co-author the book." },
+        { id:'b25', text:"The book's structure centers on Robert's own life — being raised with input from two father figures, one wealthy and one not, who each taught him a completely different set of skills and priorities." },
+        { id:'b26', text:"Robert believes traditional education genuinely matters, but argues financial literacy and communication skills matter just as much for real-world success — and most schools only ever cover the first one." },
+        { id:'b27', text:"Sharon flags that many of Robert's ideas challenge standard accounting principles. Her advice to more traditionally-minded readers: set aside strict academic frameworks and stay open to the investing insight underneath, even where it clashes with textbook accounting." },
+        { id:'b28', text:"Robert's own educated father encouraged him to become a credentialed employee who works for a company. His wealthy father figure instead encouraged him to learn how to build and own a company — and how to hire capable people to run it." }
+      ],
+      quiz:{
+        id:'q5',
+        question:"What does Robert say matters just as much as scholastic education for real-world success?",
+        options:[
+          "Athletic ability",
+          "Financial skills and communication skills",
+          "Getting into a prestigious college",
+          "Working for a single company for life"
+        ],
+        correct:1,
+        feedbackCorrect:"Correct — education is foundational, but Robert treats money skills and communication as equally essential.",
+        feedbackWrong:"Not quite — think about the two skill sets Robert says schools tend to leave out."
+      }
+    },
+    {
+      id:'g6', number:'VI', title:"Two Dads, One Mission",
+      bites: [
+        { id:'b29', text:"Robert's biological father held a senior position overseeing education for the entire state of Hawaii — which makes Robert's unconventional path especially striking." },
+        { id:'b30', text:"By the time he was a teenager, the standard warning that bad grades meant no good job didn't scare Robert — he already knew he was headed toward building his own path rather than working for someone else." },
+        { id:'b31', text:"Even so, a persistent, thoughtful high school guidance counselor convinced Robert that college was still worth completing, and he later agreed it had benefited him — despite his eagerness to start building assets right away." },
+        { id:'b32', text:"Sharon anticipates plenty of parents will find these ideas too radical, especially those already struggling just to keep their kids engaged with regular schoolwork." },
+        { id:'b33', text:"She notes that, as things stand, employees increasingly shoulder more of the tax burden with little pension security in return — many families effectively work several months of the year just to cover their taxes." },
+        { id:'b34', text:"Robert's central claim: wealthy families pass down financial lessons informally, often around the dinner table — lessons most families simply never have." },
+        { id:'b35', text:"As both a mother and a CPA, Sharon argues that \"get good grades, find a good job\" is outdated advice on its own — kids today need a more sophisticated financial education layered on top of it." },
+        { id:'b36', text:"The book's larger hope is that anyone — regardless of current job or income — can build prosperity by developing financial intelligence: the mental toolkit for actually solving money problems." },
+        { id:'b37', text:"Sharon closes by framing the choice ahead: with the future genuinely uncertain, people can either play it safe, or play it smart by getting educated and developing their own — and their children's — financial instincts." }
+      ],
+      quiz:{
+        id:'q6',
+        question:"What was the key difference between Robert's two father figures?",
+        options:[
+          "One taught him to become a credentialed employee; the other taught him to own a company and hire smart people",
+          "Both taught him to avoid education entirely",
+          "The wealthy one disapproved of school altogether",
+          "They taught him identical lessons about money"
+        ],
+        correct:0,
+        feedbackCorrect:"Right — same value on education, two very different curricula.",
+        feedbackWrong:"Think about what each dad actually wanted Robert to become."
+      }
+    }
+  ]
+};
+
+/* ============ STATE ============ */
+let state = { read:{}, quizzes:{}, entries:[] };
+
+function loadState(){
+  try{
+    const saved = localStorage.getItem('ledger-state-intro');
+    if(saved){
+      state = JSON.parse(saved);
+    }
+  }catch(e){
+    // localStorage unavailable (e.g. private browsing) or no saved state yet —
+    // the page still works, it just won't remember progress between visits.
+  }
+  render();
+}
+
+function saveState(){
+  try{
+    localStorage.setItem('ledger-state-intro', JSON.stringify(state));
+  }catch(e){
+    console.error('Could not save progress', e);
+  }
+}
+
+function addEntry(desc, amount){
+  state.entries.push({desc, amount, ts:Date.now()});
+}
+
+function markRead(biteId, text){
+  if(state.read[biteId]) return;
+  state.read[biteId] = true;
+  addEntry('Bite read — "' + text.slice(0,34) + (text.length>34?'…':'') + '"', 10);
+  saveState();
+  render();
+}
+
+function answerQuiz(groupId, quizId, chosenIndex, correctIndex, quizTitle){
+  if(!state.quizzes[quizId]) state.quizzes[quizId] = { attempted:false, passed:false };
+  const q = state.quizzes[quizId];
+  q.attempted = true;
+  q.lastChoice = chosenIndex;
+  if(chosenIndex === correctIndex && !q.passed){
+    q.passed = true;
+    addEntry('Quiz passed — "' + quizTitle + '"', 25);
+  }
+  saveState();
+  render();
+}
+
+function toggleGroup(groupId){
+  const el = document.getElementById('group-' + groupId);
+  el.classList.toggle('open');
+}
+
+/* ============ RENDER ============ */
+function render(){
+  let totalBites = 0, readBites = 0, totalQuiz = 0, passedQuiz = 0;
+  const main = document.getElementById('mainContent');
+  main.innerHTML = '';
+
+  CHAPTER.groups.forEach(group => {
+    totalBites += group.bites.length;
+    totalQuiz += 1;
+    const groupReadCount = group.bites.filter(b => state.read[b.id]).length;
+    readBites += groupReadCount;
+    const quizState = state.quizzes[group.quiz.id];
+    if(quizState && quizState.passed) passedQuiz += 1;
+
+    const groupEl = document.createElement('div');
+    groupEl.className = 'group';
+    groupEl.id = 'group-' + group.id;
+
+    const head = document.createElement('div');
+    head.className = 'group-head';
+    head.onclick = () => toggleGroup(group.id);
+    head.innerHTML = `
+      <div class="group-title-wrap">
+        <span class="group-num">${group.number}.</span>
+        <span class="group-title">${group.title}</span>
+      </div>
+      <div style="display:flex; align-items:center; gap:14px;">
+        <span class="group-badge">${groupReadCount}/${group.bites.length} read${quizState && quizState.passed ? ' · quiz ✓' : ''}</span>
+        <span class="chevron">&#9656;</span>
+      </div>
+    `;
+    groupEl.appendChild(head);
+
+    const body = document.createElement('div');
+    body.className = 'group-body';
+
+    group.bites.forEach((bite, i) => {
+      const isRead = !!state.read[bite.id];
+      const biteEl = document.createElement('div');
+      biteEl.className = 'bite' + (isRead ? ' read' : '');
+      biteEl.innerHTML = `
+        <div class="bite-check" data-bite="${bite.id}">${isRead ? '&#10003;' : ''}</div>
+        <div class="bite-body">
+          <div class="bite-idx">BITE ${i+1} OF ${group.bites.length}</div>
+          <div class="bite-text">${bite.text}</div>
+          <div class="bite-mark-btn" data-bite="${bite.id}">${isRead ? 'MARKED AS READ' : 'MARK AS READ · +10'}</div>
+        </div>
+      `;
+      body.appendChild(biteEl);
+    });
+
+    // quiz block
+    const quiz = group.quiz;
+    const qState = state.quizzes[quiz.id];
+    const quizEl = document.createElement('div');
+    quizEl.className = 'quiz';
+    let optionsHtml = '';
+    quiz.options.forEach((opt, idx) => {
+      let cls = 'quiz-option';
+      let disabled = '';
+      if(qState && qState.attempted){
+        disabled = 'disabled';
+        if(idx === quiz.correct) cls += ' correct';
+        else if(idx === qState.lastChoice) cls += ' wrong';
+      }
+      optionsHtml += `<button class="${cls}" ${disabled} data-quiz="${quiz.id}" data-group="${group.id}" data-idx="${idx}" data-correct="${quiz.correct}" data-title="${group.title.replace(/"/g,'&quot;')}">${opt}</button>`;
+    });
+    quizEl.innerHTML = `
+      <div class="quiz-label">Quick Check &middot; +25</div>
+      <div class="quiz-question">${quiz.question}</div>
+      <div class="quiz-options">${optionsHtml}</div>
+      ${qState && qState.attempted ? `<div class="quiz-feedback">${qState.passed ? quiz.feedbackCorrect : (qState.lastChoice === quiz.correct ? quiz.feedbackCorrect : quiz.feedbackWrong)}</div>` : ''}
+    `;
+    body.appendChild(quizEl);
+
+    groupEl.appendChild(body);
+    main.appendChild(groupEl);
+  });
+
+  // wire up bite clicks
+  main.querySelectorAll('.bite-check, .bite-mark-btn').forEach(el => {
+    el.addEventListener('click', (e) => {
+      const id = e.currentTarget.getAttribute('data-bite');
+      const group = CHAPTER.groups.find(g => g.bites.some(b => b.id === id));
+      const bite = group.bites.find(b => b.id === id);
+      markRead(id, bite.text);
+    });
+  });
+
+  // wire up quiz clicks
+  main.querySelectorAll('.quiz-option').forEach(btn => {
+    btn.addEventListener('click', (e) => {
+      const t = e.currentTarget;
+      if(t.hasAttribute('disabled')) return;
+      const quizId = t.getAttribute('data-quiz');
+      const groupId = t.getAttribute('data-group');
+      const idx = parseInt(t.getAttribute('data-idx'), 10);
+      const correct = parseInt(t.getAttribute('data-correct'), 10);
+      const title = t.getAttribute('data-title');
+      answerQuiz(groupId, quizId, idx, correct, title);
+    });
+  });
+
+  // open the first not-fully-complete group by default on first render
+  if(!window.__openedOnce){
+    window.__openedOnce = true;
+    const firstIncomplete = CHAPTER.groups.find(g => g.bites.some(b => !state.read[b.id]));
+    const toOpen = firstIncomplete || CHAPTER.groups[0];
+    document.getElementById('group-' + toOpen.id).classList.add('open');
+  }
+
+  // ledger panel
+  const balance = state.entries.reduce((sum, e) => sum + e.amount, 0);
+  document.getElementById('balanceFigure').textContent = balance;
+  document.getElementById('bitesProgressText').textContent = `${readBites} / ${totalBites}`;
+  document.getElementById('bitesProgressBar').style.width = (totalBites ? (readBites/totalBites*100) : 0) + '%';
+  document.getElementById('quizProgressText').textContent = `${passedQuiz} / ${totalQuiz}`;
+  document.getElementById('quizProgressBar').style.width = (totalQuiz ? (passedQuiz/totalQuiz*100) : 0) + '%';
+
+  const entriesEl = document.getElementById('ledgerEntries');
+  if(state.entries.length === 0){
+    entriesEl.innerHTML = '<div class="ledger-empty">No entries yet. Mark a bite as read or pass a quiz to open the account.</div>';
+  } else {
+    entriesEl.innerHTML = state.entries.slice().reverse().map(e => `
+      <div class="ledger-row">
+        <span class="desc">${e.desc}</span>
+        <span class="amt">+${e.amount}</span>
+      </div>
+    `).join('');
+  }
+}
+
+loadState();
+</script>
+</body>
+</html>
